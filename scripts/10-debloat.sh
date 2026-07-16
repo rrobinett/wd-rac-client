@@ -71,6 +71,12 @@ rm -rf /etc/cloud /var/lib/cloud
 # update manually over ssh instead.
 systemctl disable --now apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true
 
+# The Pi 5 kernel ships in the image but is dead weight on a Zero 2 W
+if [[ "$(uname -r)" == *-rpi-v8 ]]; then
+    apt-get purge -y 'linux-image-*-rpi-2712' 2>/dev/null || true
+    apt-get autoremove --purge -y
+fi
+
 # --- Install the one tool this node needs beyond the base OS -------------
 apt-get update
 apt-get install -y screen
@@ -79,7 +85,3 @@ apt-get clean
 echo
 echo "== Done =="
 df -h /
-echo
-echo "Optional further win (~50 MB): the Pi 5 kernel is installed but unused"
-echo "on a Zero 2 W. Verify 'uname -r' ends in rpi-v8, then:"
-echo "    apt-get purge -y 'linux-image-*-rpi-2712'"
