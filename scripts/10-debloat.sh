@@ -84,7 +84,7 @@ fi
 
 # --- Install the standard tool set for a minimal node --------------------
 apt-get update
-apt-get install -y screen tmux btop vim-tiny
+apt-get install -y screen tmux btop vim-tiny git
 apt-get clean
 
 echo

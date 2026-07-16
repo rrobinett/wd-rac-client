@@ -42,11 +42,23 @@ cd wd-rac-client
 sudo ./install.sh
 ```
 
-`install.sh` prompts for the frps server, port, auth token, this node's
-unique remote ssh port, and a proxy name, then installs frpc and enables
-the `wd-remote-access` service. Any value already set in the environment
-(e.g. `WD_FRPS_SERVER=...`) is used without prompting, so the same script
-works unattended for image building.
+`install.sh` prompts for just two things:
+
+- **site name** (defaults to the hostname)
+- **RAC number** — assigned by your administrator, or left empty to let the
+  gateway auto-assign one
+
+It then generates a node identity keypair, registers with the RAC registrar
+on `gw2.wsprdaemon.org` (which validates the RAC number against every
+registered and currently-connected client and rejects collisions), receives
+the gateway address, fleet token, and this node's deterministic ssh port
+(`35800 + RAC`), installs the matching frpc release for the local CPU, and
+enables the `wd-remote-access` service. The install fails loudly if the
+gateway rejects the port, and confirms `start proxy success` before
+declaring victory.
+
+Set `WD_RAC_SITE` and `WD_RAC_NUMBER` in the environment to skip the
+prompts for unattended installs (image building).
 
 ## Provision a minimal Pi node from your workstation
 

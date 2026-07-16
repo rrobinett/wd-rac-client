@@ -2,13 +2,22 @@
 # Placeholders (@VAR@) are filled in by scripts/20-install-wd-rac.sh.
 serverAddr = "@WD_FRPS_SERVER@"
 serverPort = @WD_FRPS_PORT@
+
+# Node identity: hash of this node's registered pubkey, checked by the
+# gateway's ssh-key auth plugin on login.
+user = "@WD_RAC_USER@"
 auth.token = "@WD_FRPS_TOKEN@"
+
+# The gateway's secure frps forces TLS
+transport.tls.enable = true
 
 # Reconnect forever if the server is unreachable at startup
 loginFailExit = false
 
 [[proxies]]
-name = "@WD_RAC_NAME@-ssh"
+# The -vm-ssh suffix and the 35800+RAC port band match the gateway's
+# rac-dashboard conventions, so the node shows up there automatically.
+name = "@WD_RAC_NAME@-vm-ssh"
 type = "tcp"
 localIP = "127.0.0.1"
 localPort = 22

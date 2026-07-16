@@ -7,7 +7,9 @@
 #   WD_FRPS_PORT     frps control port                 (default 7000)
 #   WD_RAC_REMOTE_PORT  port on the frps server mapped to this node's sshd
 #                                                      (required, unique per node)
-#   WD_RAC_NAME      proxy name                        (default: hostname)
+#   WD_RAC_NAME      site name used in the proxy name  (default: hostname)
+#   WD_RAC_USER      frpc user id (pubkey hash) for the gateway's auth
+#                    plugin (default: empty, for plain token-only servers)
 #   FRP_VERSION      frp release to install            (default below)
 #
 # Expects frpc.toml.template and wd-remote-access.service either alongside
@@ -15,9 +17,11 @@
 # Works on any systemd-based Linux; arch is auto-detected.
 set -euo pipefail
 
-FRP_VERSION="${FRP_VERSION:-0.63.0}"
+# 0.64.0 matches the frps version running on gw2
+FRP_VERSION="${FRP_VERSION:-0.64.0}"
 WD_FRPS_PORT="${WD_FRPS_PORT:-7000}"
 WD_RAC_NAME="${WD_RAC_NAME:-$(hostname)}"
+WD_RAC_USER="${WD_RAC_USER:-}"
 
 if [[ $EUID -ne 0 ]]; then
     echo "ERROR: run as root (sudo -E $0)" >&2
@@ -82,6 +86,7 @@ mkdir -p /etc/wd-remote-access
 sed -e "s|@WD_FRPS_SERVER@|$WD_FRPS_SERVER|" \
     -e "s|@WD_FRPS_PORT@|$WD_FRPS_PORT|" \
     -e "s|@WD_FRPS_TOKEN@|$WD_FRPS_TOKEN|" \
+    -e "s|@WD_RAC_USER@|$WD_RAC_USER|" \
     -e "s|@WD_RAC_NAME@|$WD_RAC_NAME|" \
     -e "s|@WD_RAC_REMOTE_PORT@|$WD_RAC_REMOTE_PORT|" \
     "$TEMPLATE" > /etc/wd-remote-access/frpc.toml
@@ -92,9 +97,29 @@ chmod 640 /etc/wd-remote-access/frpc.toml
 install -m 644 "$UNIT" /etc/systemd/system/wd-remote-access.service
 systemctl daemon-reload
 systemctl enable --now wd-remote-access.service
-sleep 3
-systemctl --no-pager status wd-remote-access.service
 
+# --- verify the tunnel actually came up -----------------------------------
+# 'port already used' here means another client grabbed the remote port
+# between registration and now — frps is the final arbiter.
+echo -n "Waiting for tunnel"
+for _ in $(seq 1 15); do
+    sleep 2
+    log="$(journalctl -u wd-remote-access.service -n 30 --no-pager 2>/dev/null || true)"
+    if grep -q 'start proxy success' <<<"$log"; then
+        echo; echo "SUCCESS: tunnel is up."
+        echo "Reach this node via:  ssh -p $WD_RAC_REMOTE_PORT <user>@$WD_FRPS_SERVER"
+        exit 0
+    fi
+    if grep -qE 'port already used|port not allowed|proxy .* already exists' <<<"$log"; then
+        echo; echo "ERROR: the gateway rejected remote port $WD_RAC_REMOTE_PORT:" >&2
+        grep -E 'port already used|port not allowed|already exists' <<<"$log" | tail -3 >&2
+        echo "Another client is using this RAC's port — pick a different RAC number." >&2
+        systemctl disable --now wd-remote-access.service
+        exit 1
+    fi
+    echo -n "."
+done
 echo
-echo "Tunnel up if the status above shows 'login to server success'."
-echo "Reach this node via:  ssh -p $WD_RAC_REMOTE_PORT <user>@$WD_FRPS_SERVER"
+echo "WARNING: tunnel not confirmed up after 30s; recent log:" >&2
+journalctl -u wd-remote-access.service -n 20 --no-pager >&2 || true
+exit 1
