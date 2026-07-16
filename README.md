@@ -22,6 +22,7 @@ removal. The debloat script below reclaims roughly 600–700 MB.
 ## Layout
 
 ```
+install.sh                   standalone interactive installer (git clone + run)
 scripts/10-debloat.sh        strip a fresh Raspberry Pi OS Lite install
 scripts/20-install-wd-rac.sh install frpc + the wd-remote-access service
 systemd/wd-remote-access.service
@@ -30,10 +31,26 @@ deploy.sh                    copy scripts to a node over ssh and run them
 docs/survey-ti4jwc-2026-07-16.md   baseline survey of the first target node
 ```
 
-## Usage
+## Install on any Linux machine (standalone)
 
-The target node needs no git — everything is pushed over ssh from your
-workstation:
+The service is not Raspberry Pi specific — it runs on any systemd-based
+Linux (x86_64 / arm64 / armv7 / armv6 / riscv64):
+
+```sh
+git clone https://github.com/rrobinett/wd-rac-client.git
+cd wd-rac-client
+sudo ./install.sh
+```
+
+`install.sh` prompts for the frps server, port, auth token, this node's
+unique remote ssh port, and a proxy name, then installs frpc and enables
+the `wd-remote-access` service. Any value already set in the environment
+(e.g. `WD_FRPS_SERVER=...`) is used without prompting, so the same script
+works unattended for image building.
+
+## Provision a minimal Pi node from your workstation
+
+The target node needs no git — everything is pushed over ssh:
 
 ```sh
 # 1. Strip the OS (interactive confirmation before anything is purged)
