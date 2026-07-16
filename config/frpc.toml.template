@@ -1,0 +1,15 @@
+# frpc client config for the wd-remote-access service.
+# Placeholders (@VAR@) are filled in by scripts/20-install-wd-rac.sh.
+serverAddr = "@WD_FRPS_SERVER@"
+serverPort = @WD_FRPS_PORT@
+auth.token = "@WD_FRPS_TOKEN@"
+
+# Reconnect forever if the server is unreachable at startup
+loginFailExit = false
+
+[[proxies]]
+name = "@WD_RAC_NAME@-ssh"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 22
+remotePort = @WD_RAC_REMOTE_PORT@
