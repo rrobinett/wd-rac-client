@@ -42,6 +42,14 @@ cd wd-rac-client
 sudo ./install.sh
 ```
 
+No git on the machine? Use the tarball instead (~60 MB smaller footprint):
+
+```sh
+curl -L https://github.com/rrobinett/wd-rac-client/archive/main.tar.gz | tar xz
+cd wd-rac-client-main
+sudo ./install.sh
+```
+
 `install.sh` prompts for just two things:
 
 - **site name** (defaults to the hostname)
