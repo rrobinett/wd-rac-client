@@ -17,13 +17,18 @@ if ! grep -qi 'raspberry' /proc/device-tree/model 2>/dev/null; then
     exit 1
 fi
 
-# wlan0 must carry the default route; if it doesn't, the network assumptions
-# behind the firmware purges below are wrong.
-if ! ip route show default | grep -q 'dev wlan0'; then
-    echo "ERROR: default route is not via wlan0 — review before debloating." >&2
-    ip route show default >&2
-    exit 1
-fi
+# The default route must be on onboard wifi (wlan*) or wired ethernet
+# (eth*/en*); anything else (USB dongle, PPP, ...) may depend on packages
+# purged below, so refuse and let a human look.
+uplink=$(ip route show default | awk '/^default/ {for (i=1;i<NF;i++) if ($i=="dev") print $(i+1); exit}')
+case "$uplink" in
+    wlan*|eth*|en*) echo "Uplink: $uplink" ;;
+    *)
+        echo "ERROR: default route is via '${uplink:-none}', not wifi/ethernet — review before debloating." >&2
+        ip route show default >&2
+        exit 1
+        ;;
+esac
 
 # --- Protect the packages that keep the only link to the box alive -------
 apt-mark hold network-manager wpasupplicant firmware-brcm80211 \
@@ -77,9 +82,9 @@ if [[ "$(uname -r)" == *-rpi-v8 ]]; then
     apt-get autoremove --purge -y
 fi
 
-# --- Install the one tool this node needs beyond the base OS -------------
+# --- Install the standard tool set for a minimal node --------------------
 apt-get update
-apt-get install -y screen
+apt-get install -y screen tmux btop vim-tiny
 apt-get clean
 
 echo

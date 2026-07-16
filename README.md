@@ -7,9 +7,14 @@ Debian 13 arm64).
 The finished node runs exactly three things beyond the base OS:
 
 1. `sshd` — remote login
-2. `screen` — persistent terminal sessions
+2. `screen` / `tmux` — persistent terminal sessions (plus `btop` and
+   `vim-tiny` as the standard small-tool set)
 3. `wd-remote-access` — an frpc reverse tunnel back to the WsprDaemon frps
    server, so the node is reachable even behind NAT
+
+Supported uplinks: onboard wifi (e.g. Zero 2 W, 3B+) or wired ethernet
+(e.g. 3B). The debloat script keeps `firmware-brcm80211` either way so
+onboard wifi always remains available.
 
 Everything else on a stock Raspberry Pi OS Lite image is a candidate for
 removal. The debloat script below reclaims roughly 600–700 MB.
