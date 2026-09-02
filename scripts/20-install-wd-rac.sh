@@ -19,7 +19,9 @@
 #                    plugin (default: empty, for plain token-only servers)
 #   WD_RAC_RETIRE_LEGACY=yes  if WsprDaemon's built-in RAC daemon is what is
 #                    being replaced, also comment REMOTE_ACCESS_* out of
-#                    wsprdaemon.conf so WsprDaemon does not re-enable it
+#                    wsprdaemon.conf so WsprDaemon does not re-enable it;
+#                    =managed when WsprDaemon itself runs this installer and
+#                    owns the RAC= setting (no conf edit, no warning)
 #   FRP_VERSION      frp release to install            (default below)
 #
 # The node presents one identity (user, token, proxy names, remote ports) to
@@ -227,7 +229,9 @@ report_and_exit() {
     echo
     echo "Reach this node via the gateways' WireGuard tiers, e.g.:"
     echo "    ssh -p $WD_RAC_REMOTE_PORT <user>@10.111.220.1     (wd-rac, via gw2)"
-    if [[ $LEGACY_WD -eq 1 && "$WD_RAC_RETIRE_LEGACY" != "yes" ]]; then
+    # (WD_RAC_RETIRE_LEGACY=managed: WsprDaemon itself invoked us and owns
+    #  the RAC= setting, so neither edit the conf nor warn about it)
+    if [[ $LEGACY_WD -eq 1 && "$WD_RAC_RETIRE_LEGACY" != "yes" && "$WD_RAC_RETIRE_LEGACY" != "managed" ]]; then
         echo
         echo "NOTE: WsprDaemon's legacy RAC daemon was stopped, but REMOTE_ACCESS_CHANNEL"
         echo "      is still set in wsprdaemon.conf, so WsprDaemon will re-enable it and"
