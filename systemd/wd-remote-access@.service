@@ -1,0 +1,22 @@
+[Unit]
+Description=WsprDaemon Remote Access Client (frpc reverse tunnel to %i)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# One instance per gateway: %i is the gateway name (gw2, gw1, ...). Each
+# instance retries its own gateway forever; neither knows the other exists.
+ExecStart=/usr/local/bin/frpc -c /etc/wd-remote-access/gateways/%i.toml
+Restart=always
+RestartSec=10
+# frpc needs no privileges beyond reading its config
+User=wd-rac
+Group=wd-rac
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
