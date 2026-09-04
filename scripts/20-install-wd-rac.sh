@@ -38,7 +38,7 @@
 # Works on any systemd-based Linux; arch is auto-detected.
 set -euo pipefail
 
-CLIENT_VERSION="2.0.0"
+CLIENT_VERSION="2.1.0"
 
 # 0.64.0 matches the frps version running on gw2
 FRP_VERSION="${FRP_VERSION:-0.64.0}"
@@ -147,6 +147,7 @@ WD_RAC_REMOTE_PORT="$(band_port vm_ssh || echo "${WD_RAC_REMOTE_PORT:-?}")"
 # node presents the same identity everywhere and the dashboards agree on
 # who it is. Configs are (re)written before anything is started.
 GW_NAMES=()
+CONFIG_CHANGED=0     # set when a gateway config that a running instance already loaded is rewritten differently
 for entry in $WD_GATEWAYS; do
     name="${entry%%=*}"; hostport="${entry#*=}"
     host="${hostport%:*}"; port="${hostport##*:}"
@@ -154,6 +155,7 @@ for entry in $WD_GATEWAYS; do
         echo "ERROR: bad WD_GATEWAYS entry '$entry' (want name=host:port)" >&2
         exit 1
     fi
+    old_conf="$(cat "$CONF_DIR/gateways/$name.toml" 2>/dev/null || true)"
     {
         sed -e "s|@WD_FRPS_SERVER@|$host|" \
             -e "s|@WD_FRPS_PORT@|$port|" \
@@ -164,6 +166,10 @@ for entry in $WD_GATEWAYS; do
     } > "$CONF_DIR/gateways/$name.toml"
     chown root:wd-rac "$CONF_DIR/gateways/$name.toml"
     chmod 640 "$CONF_DIR/gateways/$name.toml"
+    if [[ -n "$old_conf" && "$old_conf" != "$(cat "$CONF_DIR/gateways/$name.toml")" ]] \
+       && systemctl is-active --quiet "wd-remote-access@$name.service"; then
+        CONFIG_CHANGED=1
+    fi
     GW_NAMES+=("$name")
 done
 PRIMARY="${GW_NAMES[0]}"
@@ -305,6 +311,14 @@ if systemctl is-active --quiet "$OLD_UNIT"; then
 fi
 
 # Fresh install (or re-run on an already-upgraded node)
+if [[ $CONFIG_CHANGED -eq 1 ]]; then
+    # A running instance keeps the config it started with, so a re-run that
+    # adds or changes a tunnel (e.g. WsprDaemon adding vm_grape) must restart
+    # them. frpc reconnects within seconds; an ssh session riding the tunnel
+    # will drop once.
+    echo "Tunnel set changed ($WD_RAC_PROXIES): restarting the running instances"
+    systemctl restart $(instances)
+fi
 systemctl enable --now $(instances)
 
 # 'port already used' here means another client grabbed the remote port

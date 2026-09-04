@@ -61,7 +61,8 @@ It then generates a node identity keypair, registers with the RAC registrar
 on `gw2.wsprdaemon.org` (which validates the RAC number against every
 registered and currently-connected client and rejects collisions), receives
 the **gateway list**, fleet token, and this node's deterministic ports
-(`35800 + RAC` for ssh, `45800 + RAC` for a web UI, …), installs the
+(`35800 + RAC` for ssh, `45800 + RAC` for a web UI, `40800 + RAC` for
+WsprDaemon's GRAPE carrier strip charts, …), installs the
 matching frpc release for the local CPU, and enables one
 `wd-remote-access@<gateway>` instance per gateway — normally `@gw2`
 (primary) and `@gw1` (standby). The node presents the same identity and
@@ -73,7 +74,10 @@ victory.
 Set `WD_RAC_SITE` and `WD_RAC_NUMBER` in the environment to skip the
 prompts for unattended installs (image building). `WD_RAC_PROXIES`
 chooses what is tunnelled (default `vm_ssh=22`; e.g.
-`"vm_ssh=22 vm_web=8081"` to also publish ka9q-web on `45800 + RAC`).
+`"vm_ssh=22 vm_web=8081"` to also publish ka9q-web on `45800 + RAC`, and
+`vm_grape=8088` for the GRAPE charts page on `40800 + RAC`). Re-running the
+installer with a different tunnel set rewrites the configs and restarts the
+running instances so the new tunnels come up.
 
 ### Upgrading, and migrating a WsprDaemon host off its built-in RAC
 

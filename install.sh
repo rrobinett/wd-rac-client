@@ -19,8 +19,9 @@
 #                   gateway auto-assign the lowest free number >= 500
 #   WD_RAC_PROXIES  services to expose, as "band=localport ..." using the
 #                   registrar's band names vm_ssh vm_web host_ssh host_ui
-#                   (default "vm_ssh=22"; e.g. "vm_ssh=22 vm_web=8081" to
-#                   also publish ka9q-web). On a WsprDaemon host still running
+#                   vm_grape (default "vm_ssh=22"; e.g. "vm_ssh=22 vm_web=8081"
+#                   to also publish ka9q-web, "vm_grape=8088" for WsprDaemon's
+#                   GRAPE carrier strip charts on 40800+RAC). On a WsprDaemon host still running
 #                   the legacy built-in RAC (bin/frpc_wd.ini) the default is
 #                   derived from that file, so nothing that was reachable
 #                   before stops being reachable.
@@ -58,7 +59,8 @@ if [[ -f "$LEGACY_INI" ]]; then
         $1 == "local_port"  { lp = $2 }
         $1 == "remote_port" { rp = $2; band = int(rp / 100) * 100; rac = rp - band
                               b = (band == 35800) ? "vm_ssh" : (band == 45800) ? "vm_web" : \
-                                  (band == 50800) ? "host_ssh" : (band == 55800) ? "host_ui" : ""
+                                  (band == 50800) ? "host_ssh" : (band == 55800) ? "host_ui" : \
+                                  (band == 40800) ? "vm_grape" : ""
                               if (b != "") { printf "%s=%s ", b, lp; RAC = rac } }
         END { printf "\n%s\n", RAC }' "$LEGACY_INI")"
     legacy_proxies="$(sed -n 1p <<<"$legacy" | sed 's/ *$//')"
