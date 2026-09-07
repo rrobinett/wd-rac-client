@@ -61,7 +61,8 @@ It then generates a node identity keypair, registers with the RAC registrar
 on `gw2.wsprdaemon.org` (which validates the RAC number against every
 registered and currently-connected client and rejects collisions), receives
 the **gateway list**, fleet token, and this node's deterministic ports
-(`35800 + RAC` for ssh, `45800 + RAC` for a web UI, `40800 + RAC` for
+(`35800 + RAC` for ssh, `45800 + RAC` for a web UI, `46800`/`47800 + RAC` for the
+web UIs of a 2nd and 3rd RX888 (`vm_web2`, `vm_web3`), `40800 + RAC` for
 WsprDaemon's GRAPE carrier strip charts, …), installs the
 matching frpc release for the local CPU, and enables one
 `wd-remote-access@<gateway>` instance per gateway — normally `@gw2`
